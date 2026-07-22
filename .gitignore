@@ -16,6 +16,13 @@ env/
 *.ckpt
 *.onnx
 
+# Go — бинарники сборки (пересобираются, в git не нужны)
+game-service/server
+*.exe
+
+# Личные заметки (не для репозитория)
+docs/
+
 # Jupyter
 .ipynb_checkpoints/
 
