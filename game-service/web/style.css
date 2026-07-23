@@ -1,0 +1,34 @@
+.board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  width: 480px;                /* ширина всей доски */
+  background: #2e7d32;         /* зелёное сукно */
+}
+
+.cell {
+  aspect-ratio: 1;
+  border: 1px solid #1b5e20;
+  display: flex;              /* включить флекс */
+  align-items: center;       /* центр по вертикали */
+  justify-content: center;   /* центр по горизонтали */
+}
+
+.cell.valid {
+  cursor: pointer;                 /* курсор-рука: видно, что кликабельно */
+}
+.cell.valid::after {
+  content: "";
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.25);  /* полупрозрачная точка-подсказка */
+}
+
+.piece {
+  width: 80%;
+  height: 80%;
+  border-radius: 50%;      /* квадрат → круг */
+  margin: auto;            /* центр по горизонтали */
+}
+.piece.white { background: #fafafa; }
+.piece.black { background: #212121; }

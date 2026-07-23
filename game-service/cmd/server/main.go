@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"encoding/json"
 	"github.com/ArthurMukha/reversi-rl-agent/game-service/internal/game"
+	"github.com/ArthurMukha/reversi-rl-agent/game-service/web"
 )
 
 type server struct {
@@ -112,6 +113,8 @@ func main() {
 	// fmt.Println(svr.game.Current)
 
 	mux := http.NewServeMux()
+	mux.Handle("/", http.FileServer(http.FS(web.Files)))
+	
 	mux.HandleFunc("GET /api/state",  srv.handleState)
 	mux.HandleFunc("POST /api/new",  srv.handleNew)
 	mux.HandleFunc("POST /api/move",  srv.handleMove)
