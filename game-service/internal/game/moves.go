@@ -146,6 +146,6 @@ func (s *State) NextTurn() {
 	}
 }
 
-func (s *State) isGameOver() bool {
+func (s *State) IsGameOver() bool {
 	return len(s.ValidMoves(White)) == 0 && len(s.ValidMoves(Black)) == 0
 }
