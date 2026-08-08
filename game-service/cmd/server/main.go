@@ -7,10 +7,12 @@ import (
 	"github.com/ArthurMukha/reversi-rl-agent/game-service/web"
 	"log"
 	"net/http"
+	"sync"
 )
 
 type server struct {
 	game *game.State
+	mu   sync.Mutex
 }
 
 type stateResponse struct {
@@ -63,22 +65,23 @@ func (s *server) writeState(w http.ResponseWriter) {
 }
 
 func (s *server) handleState(w http.ResponseWriter, r *http.Request) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	s.writeState(w)
 }
 
 func (s *server) handleNew(w http.ResponseWriter, r *http.Request) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.game = game.New()
 
 	s.writeState(w)
 }
 
 func (s *server) handleMove(w http.ResponseWriter, r *http.Request) {
-
-	if s.game == nil {
-		http.Error(w, "нет активной игры", http.StatusBadRequest)
-		return
-	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	var req moveRequest
 
@@ -104,7 +107,7 @@ func (s *server) handleMove(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	srv := &server{game.New()}
+	srv := &server{game: game.New()}
 
 	// fmt.Println(svr.game.Current)
 
