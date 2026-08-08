@@ -112,7 +112,7 @@ function render(state) {
   gameOver = state.gameOver;
 
   const valid = new Set();
-  for (const m of state.validMoves) {
+  for (const m of state.legalMoves) {
     valid.add(m.row * 8 + m.col);
   }
 

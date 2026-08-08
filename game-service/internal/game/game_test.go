@@ -41,54 +41,54 @@ func TestScoreInitial(t *testing.T) {
 	}
 }
 
-func TestValidMovesInitial(t *testing.T) {
+func TestLegalMovesInitial(t *testing.T) {
 	g := New()
 
-	w_moves := g.ValidMoves(White)
+	whiteMoves := g.LegalMoves(White)
 
-	w_correct_moves := []Move{
+	whiteCorrectMoves := []Move{
 		{3, 5}, {5, 3}, {2, 4}, {4, 2},
 	}
 
-	if len(w_moves) != len(w_correct_moves) {
+	if len(whiteMoves) != len(whiteCorrectMoves) {
 		t.Errorf(
 			"White got %d moves. expected %d moves",
-			len(w_moves),
-			len(w_correct_moves),
+			len(whiteMoves),
+			len(whiteCorrectMoves),
 		)
 	}
 
-	w_set := map[Move]bool{}
-	for _, m := range w_moves {
-		w_set[m] = true
+	whiteSet := map[Move]bool{}
+	for _, m := range whiteMoves {
+		whiteSet[m] = true
 	}
-	for _, w := range w_correct_moves {
-		if !w_set[w] {
-			t.Errorf("Whate: expected %v move, but it isn`t in %v", w, w_moves)
+	for _, w := range whiteCorrectMoves {
+		if !whiteSet[w] {
+			t.Errorf("Whate: expected %v move, but it isn`t in %v", w, whiteMoves)
 		}
 	}
 
-	b_moves := g.ValidMoves(Black)
+	blackMoves := g.LegalMoves(Black)
 
-	b_correct_moves := []Move{
+	blackCorrectMoves := []Move{
 		{3, 2}, {5, 4}, {4, 5}, {2, 3},
 	}
 
-	if len(b_moves) != len(b_correct_moves) {
+	if len(blackMoves) != len(blackCorrectMoves) {
 		t.Errorf(
 			"Black got %d moves. expected %d moves",
-			len(b_moves),
-			len(b_correct_moves),
+			len(blackMoves),
+			len(blackCorrectMoves),
 		)
 	}
 
-	b_set := map[Move]bool{}
-	for _, m := range b_moves {
-		b_set[m] = true
+	blackSet := map[Move]bool{}
+	for _, m := range blackMoves {
+		blackSet[m] = true
 	}
-	for _, w := range b_correct_moves {
-		if !b_set[w] {
-			t.Errorf("Black: expected %v move, but it isn`t in %v", w, b_moves)
+	for _, w := range blackCorrectMoves {
+		if !blackSet[w] {
+			t.Errorf("Black: expected %v move, but it isn`t in %v", w, blackMoves)
 		}
 	}
 }

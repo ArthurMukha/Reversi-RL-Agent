@@ -16,7 +16,7 @@ type server struct {
 type stateResponse struct {
 	Board      [8][8]game.Cell `json:"board"`
 	Current    game.Cell       `json:"current"`
-	ValidMoves []moveDTO       `json:"validMoves"`
+	LegalMoves []moveDTO       `json:"legalMoves"`
 	White      int             `json:"whiteScore"`
 	Black      int             `json:"blackScore"`
 	GameOver   bool            `json:"gameOver"`
@@ -32,9 +32,10 @@ type moveRequest struct {
 	Col int `json:"col"`
 }
 
-func (s *server) WriteResponse(w http.ResponseWriter) {
+func (s *server) writeState(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
 
-	gm := s.game.ValidMoves(s.game.Current)
+	gm := s.game.LegalMoves(s.game.Current)
 
 	dtos := make([]moveDTO, 0, len(gm))
 	for _, m := range gm {
@@ -49,7 +50,7 @@ func (s *server) WriteResponse(w http.ResponseWriter) {
 	resp := stateResponse{
 		Board:      s.game.Board,
 		Current:    s.game.Current,
-		ValidMoves: dtos,
+		LegalMoves: dtos,
 		White:      ws,
 		Black:      bs,
 		GameOver:   s.game.IsGameOver(),
@@ -57,24 +58,19 @@ func (s *server) WriteResponse(w http.ResponseWriter) {
 
 	err := json.NewEncoder(w).Encode(resp)
 	if err != nil {
-		log.Println(fmt.Sprintf("Couldn't convert board into json: %v", err))
+		log.Printf("Couldn't convert board into json: %v", err)
 	}
 }
 
 func (s *server) handleState(w http.ResponseWriter, r *http.Request) {
 
-	if s.game == nil {
-		http.Error(w, "нет активной игры", http.StatusInternalServerError)
-		return
-	}
-
-	s.WriteResponse(w)
+	s.writeState(w)
 }
 
 func (s *server) handleNew(w http.ResponseWriter, r *http.Request) {
 	s.game = game.New()
 
-	s.WriteResponse(w)
+	s.writeState(w)
 }
 
 func (s *server) handleMove(w http.ResponseWriter, r *http.Request) {
@@ -98,12 +94,12 @@ func (s *server) handleMove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.game.ApplyMove(m); err != nil {
-		log.Println(fmt.Errorf("handleMove: %v", err))
+		log.Printf("handleMove: %v", err)
 		http.Error(w, "недопустимый ход", http.StatusBadRequest)
 		return
 	}
 
-	s.WriteResponse(w)
+	s.writeState(w)
 }
 
 func main() {

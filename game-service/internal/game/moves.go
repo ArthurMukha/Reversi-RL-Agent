@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-var DIRECTIONS = [8][2]int{
+var directions = [8][2]int{
 	{-1, -1}, {-1, 0}, {-1, 1},
 	{0, -1}, {0, 1},
 	{1, -1}, {1, 0}, {1, 1},
@@ -14,7 +14,7 @@ type Move struct {
 	Row, Col int
 }
 
-func (s *State) ValidMoves(player Cell) []Move {
+func (s *State) LegalMoves(player Cell) []Move {
 	seen := make(map[Move]bool)
 
 	opp := opponent(player)
@@ -25,7 +25,7 @@ func (s *State) ValidMoves(player Cell) []Move {
 				continue
 			}
 
-			for _, d := range DIRECTIONS {
+			for _, d := range directions {
 				dr, dc := d[0], d[1]
 				r, c := row+dr, col+dc
 				if !(0 <= r && r < 8 && 0 <= c && c < 8) {
@@ -78,7 +78,7 @@ func opponent(currentPlayer Cell) Cell {
 }
 
 func (s *State) isLegal(player Cell, m Move) bool {
-	for _, v := range s.ValidMoves(player) {
+	for _, v := range s.LegalMoves(player) {
 		if v == m {
 			return true
 		}
@@ -96,7 +96,7 @@ func (s *State) ApplyMove(m Move) error {
 
 	allReverses := make([]Move, 0)
 
-	for _, d := range DIRECTIONS {
+	for _, d := range directions {
 		dr, dc := d[0], d[1]
 		r, c := m.Row, m.Col
 		reverse := make([]Move, 0)
@@ -141,11 +141,11 @@ func (s *State) ApplyMove(m Move) error {
 
 func (s *State) NextTurn() {
 	opp := opponent(s.Current)
-	if len(s.ValidMoves(opp)) != 0 {
+	if len(s.LegalMoves(opp)) != 0 {
 		s.Current = opp
 	}
 }
 
 func (s *State) IsGameOver() bool {
-	return len(s.ValidMoves(White)) == 0 && len(s.ValidMoves(Black)) == 0
+	return len(s.LegalMoves(White)) == 0 && len(s.LegalMoves(Black)) == 0
 }
