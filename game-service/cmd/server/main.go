@@ -1,17 +1,26 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/ArthurMukha/reversi-rl-agent/game-service/internal/aiclient"
 	"github.com/ArthurMukha/reversi-rl-agent/game-service/internal/game"
 	"github.com/ArthurMukha/reversi-rl-agent/game-service/web"
 	"log"
 	"net/http"
 	"sync"
+	"time"
 )
+
+type mover interface {
+	SelectMove(ctx context.Context, st *game.State, modelID string) (game.Move, error)
+}
 
 type server struct {
 	game *game.State
+	ai   mover
 	mu   sync.Mutex
 }
 
@@ -105,9 +114,63 @@ func (s *server) handleMove(w http.ResponseWriter, r *http.Request) {
 	s.writeState(w)
 }
 
+func (s *server) handleAIMove(w http.ResponseWriter, r *http.Request) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.game.IsGameOver() {
+		http.Error(w, "game over", http.StatusBadRequest)
+		return
+	}
+
+	legalMoves := s.game.LegalMoves(s.game.Current)
+	if len(legalMoves) == 0 {
+		s.game.NextTurn()
+		s.writeState(w)
+		return
+	}
+
+	move, err := s.ai.SelectMove(r.Context(), s.game, "random")
+
+	if err != nil {
+		log.Printf("handleAIMove: %v", err)
+		switch {
+		case errors.Is(err, aiclient.ErrUnavailable):
+			http.Error(w, "сервис модели недоступен", http.StatusServiceUnavailable)
+		case errors.Is(err, aiclient.ErrBadResponse):
+			http.Error(w, "модель вернула некорректный ход", http.StatusBadGateway)
+		default:
+			http.Error(w, "не удалось получить ход модели", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	if err := s.game.ApplyMove(move); err != nil {
+		log.Printf("handleAIMove: applying %v: %v", move, err)
+		http.Error(w, "не удалось применить ход модели", http.StatusInternalServerError)
+		return
+	}
+	s.writeState(w)
+}
+
 func main() {
 
-	srv := &server{game: game.New()}
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
+	client, err := aiclient.New("127.0.0.1:50051", 2*time.Second)
+	if err != nil {
+		log.Fatal(fmt.Errorf("main: %w", err))
+	}
+	defer client.Close()
+
+	srv := &server{
+		game: game.New(),
+		ai:   client,
+	}
 
 	// fmt.Println(svr.game.Current)
 
@@ -117,7 +180,8 @@ func main() {
 	mux.HandleFunc("GET /api/state", srv.handleState)
 	mux.HandleFunc("POST /api/new", srv.handleNew)
 	mux.HandleFunc("POST /api/move", srv.handleMove)
+	mux.HandleFunc("POST /api/ai-move", srv.handleAIMove)
 
 	log.Println("слушаю на http://localhost:8080")
-	log.Fatal(http.ListenAndServe("127.0.0.1:8080", mux))
+	return http.ListenAndServe("127.0.0.1:8080", mux)
 }
