@@ -1,4 +1,6 @@
 # Рантайм сервиса
-torch==2.13.0
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.13.0+cpu 
+numpy==2.5.1 # чтобы torch не шумел в логах
 grpcio==1.83.0
 protobuf==7.35.1
