@@ -19,9 +19,10 @@ type mover interface {
 }
 
 type server struct {
-	game *game.State
-	ai   mover
-	mu   sync.Mutex
+	game 		*game.State
+	ai   		mover
+	modelId 	string
+	mu   		sync.Mutex
 }
 
 type stateResponse struct {
@@ -130,7 +131,7 @@ func (s *server) handleAIMove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	move, err := s.ai.SelectMove(r.Context(), s.game, "random")
+	move, err := s.ai.SelectMove(r.Context(), s.game, s.modelId)
 
 	if err != nil {
 		log.Printf("handleAIMove: %v", err)
@@ -168,8 +169,9 @@ func run() error {
 	defer client.Close()
 
 	srv := &server{
-		game: game.New(),
-		ai:   client,
+		game: 		game.New(),
+		ai:   		client,
+		modelId: 	"iter13-wr72",
 	}
 
 	// fmt.Println(svr.game.Current)
