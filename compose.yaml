@@ -1,0 +1,14 @@
+services:
+  game-service:
+    build:
+      context: .
+      dockerfile: game-service/Dockerfile
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      - MODEL_SERVICE_ADDR=model-service:50051
+  
+  model-service:
+    build:
+      context: .
+      dockerfile: model_service/Dockerfile

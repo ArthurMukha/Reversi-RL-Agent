@@ -43,20 +43,37 @@ reversi-rl-agent/
 │   ├── internal/game/         # чистый движок Реверси + тесты
 │   ├── internal/aiclient/     # gRPC-клиент к model-service
 │   ├── internal/pb/           # сгенерированный код контракта
-│   └── web/                   # интерфейс, встроен через //go:embed
+│   ├── web/                   # интерфейс, встроен через //go:embed
+│   └── Dockerfile             # multi-stage: статический бинарник на distroless
 ├── model_service/             # Python: gRPC-сервер, только инференс
 │   ├── net.py                 # архитектура сети
 │   ├── checkpoint.py          # загрузка весов
 │   ├── server.py              # gRPC-сервер
-│   └── checkpoints/           # отобранные веса (едут в git)
+│   ├── checkpoints/           # отобранные веса (едут в git)
+│   └── Dockerfile             # образ с CPU-сборкой torch
 ├── training/training_1.ipynb  # обучение: self-play, MCTS, арена
+├── compose.yaml               # оба сервиса одной командой
 └── Makefile                   # генерация кода из .proto
 ```
 
 ## Запуск
 
-Игра человек-против-человека работает без Python — model-service нужен
-только для игры против модели.
+Нужен только Docker:
+
+```bash
+docker compose up --build     # http://127.0.0.1:8080
+docker compose down           # остановить
+```
+
+Наружу смотрит один порт — 8080 на `127.0.0.1`. Сервис модели не
+публикуется: игровой сервер находит его по имени во внутренней сети
+Compose.
+
+### Без Docker
+
+Оба сервиса запускаются и вручную — так удобнее во время разработки.
+Игра человек-против-человека работает без Python: без сервиса модели
+запрос хода ИИ возвращает 503, а партия продолжается.
 
 ```bash
 # веб-интерфейс: http://127.0.0.1:8080
@@ -66,6 +83,10 @@ go -C game-service run ./cmd/server/
 model_service/.venv/bin/python -m model_service.server
 ```
 
+Адреса и идентификатор модели читаются из переменных окружения
+(`LISTEN_ADDR`, `MODEL_SERVICE_ADDR`, `MODEL_ID`); их значения по
+умолчанию совпадают с командами выше, поэтому задавать ничего не нужно.
+
 ## Разработка
 
 ```bash
@@ -74,6 +95,18 @@ go -C game-service test -race ./...     # тесты движка
 go -C game-service vet ./...            # статические проверки
 gofmt -l game-service/                  # форматирование (пусто = ок)
 ```
+
+Python-окружение для локального запуска и генерации кода:
+
+```bash
+python -m venv model_service/.venv
+model_service/.venv/bin/pip install -r model_service/requirements-dev.txt
+```
+
+`requirements.txt` — только то, что нужно в рантайме (оно и едет в образ);
+`requirements-dev.txt` добавляет к нему `grpcio-tools` для `make proto`.
+CPU-сборка torch подтягивается автоматически: индекс прописан в самом
+файле зависимостей.
 
 Сгенерированный из `.proto` код коммитится в репозиторий, чтобы проект
 собирался без `protoc` и плагинов.
@@ -99,7 +132,7 @@ gofmt -l game-service/                  # форматирование (пуст
 ### Дальше
 
 **Запуск и эксплуатация**
-- [ ] 6. Docker Compose: оба сервиса одной командой, адреса и id модели — из
+- [x] 6. Docker Compose: оба сервиса одной командой, адреса и id модели — из
       переменных окружения.
 - [ ] 7. CI: `go vet`, `go test -race`, `gofmt`, `ruff`, сборка образов.
 - [ ] 8. Тесты HTTP-слоя на `httptest` с заглушкой вместо клиента модели.
