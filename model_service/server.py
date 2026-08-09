@@ -12,7 +12,7 @@ import grpc
 
 log = logging.getLogger(__name__)
 
-DEFAULT_TEMPERATURE = 0.2
+DEFAULT_TEMPERATURE = 0.0
 
 class ModelServicer(pb_grpc.ModelServiceServicer):
     def __init__(self, server_id:str, checkpoints_path: Path):
