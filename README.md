@@ -49,7 +49,7 @@ reversi-rl-agent/
 │   ├── checkpoint.py          # загрузка весов
 │   ├── server.py              # gRPC-сервер
 │   └── checkpoints/           # отобранные веса (едут в git)
-├── model/training_1.ipynb     # обучение: self-play, MCTS, арена
+├── training/training_1.ipynb  # обучение: self-play, MCTS, арена
 └── Makefile                   # генерация кода из .proto
 ```
 
@@ -80,7 +80,7 @@ gofmt -l game-service/                  # форматирование (пуст
 
 ## Как обучалась модель
 
-Ноутбук `model/training_1.ipynb` реализует цикл в духе AlphaZero: сеть играет
+Ноутбук `training/training_1.ipynb` реализует цикл в духе AlphaZero: сеть играет
 сама с собой, партии складываются в replay buffer, на них дообучается новая
 версия, после чего кандидат играет матч против текущей лучшей в «арене» и
 принимается только при уверенном перевесе. Отобранные веса лежат в
