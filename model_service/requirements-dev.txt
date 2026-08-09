@@ -1,0 +1,4 @@
+-r requirements.txt
+
+# Для генерации кода из .proto (make proto), в рантайме не нужен
+grpcio-tools==1.83.0

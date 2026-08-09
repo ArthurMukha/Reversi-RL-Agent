@@ -1,8 +1,4 @@
 # Рантайм сервиса
-  torch==2.13.0
-  grpcio==1.83.0
-  protobuf==7.35.1
-  numpy==2.5.1
-
-  # Только для генерации кода из .proto (make proto), в рантайме не нужен
-  grpcio-tools==1.83.0
+torch==2.13.0
+grpcio==1.83.0
+protobuf==7.35.1
