@@ -7,6 +7,7 @@ from model_service import inference
 
 from concurrent import futures
 from pathlib import Path
+import os
 import logging
 import grpc
 
@@ -72,8 +73,7 @@ class ModelServicer(pb_grpc.ModelServiceServicer):
         return response 
 
     
-def serve(address: str = "127.0.0.1:50051") -> None:
-
+def serve(address: str) -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 
@@ -92,5 +92,7 @@ def serve(address: str = "127.0.0.1:50051") -> None:
     log.info("selectmove-server слушает %s", address)
     server.wait_for_termination()
 
+
 if __name__ == "__main__":
-    serve()
+    address = os.getenv("LISTEN_ADDR", "127.0.0.1:50051")
+    serve(address)

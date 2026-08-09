@@ -10,6 +10,7 @@ import (
 	"github.com/ArthurMukha/reversi-rl-agent/game-service/web"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 )
@@ -19,10 +20,10 @@ type mover interface {
 }
 
 type server struct {
-	game 		*game.State
-	ai   		mover
-	modelId 	string
-	mu   		sync.Mutex
+	game    *game.State
+	ai      mover
+	modelId string
+	mu      sync.Mutex
 }
 
 type stateResponse struct {
@@ -154,6 +155,14 @@ func (s *server) handleAIMove(w http.ResponseWriter, r *http.Request) {
 	s.writeState(w)
 }
 
+func envOr(key, fallback string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+	return value
+}
+
 func main() {
 
 	if err := run(); err != nil {
@@ -162,19 +171,20 @@ func main() {
 }
 
 func run() error {
-	client, err := aiclient.New("127.0.0.1:50051", 2*time.Second)
+	modelServiceAddr := envOr("MODEL_SERVICE_ADDR", "127.0.0.1:50051")
+	modelId := envOr("MODEL_ID", "iter13-wr72")
+
+	client, err := aiclient.New(modelServiceAddr, 2*time.Second)
 	if err != nil {
-		log.Fatal(fmt.Errorf("main: %w", err))
+		return fmt.Errorf("main: %w", err)
 	}
 	defer client.Close()
 
 	srv := &server{
-		game: 		game.New(),
-		ai:   		client,
-		modelId: 	"iter13-wr72",
+		game:    game.New(),
+		ai:      client,
+		modelId: modelId,
 	}
-
-	// fmt.Println(svr.game.Current)
 
 	mux := http.NewServeMux()
 	mux.Handle("/", http.FileServer(http.FS(web.Files)))
@@ -184,6 +194,7 @@ func run() error {
 	mux.HandleFunc("POST /api/move", srv.handleMove)
 	mux.HandleFunc("POST /api/ai-move", srv.handleAIMove)
 
-	log.Println("слушаю на http://localhost:8080")
-	return http.ListenAndServe("127.0.0.1:8080", mux)
+	listenAddr := envOr("LISTEN_ADDR", "127.0.0.1:8080")
+	log.Printf("слушаю на http://%s\n", listenAddr)
+	return http.ListenAndServe(listenAddr, mux)
 }
