@@ -15,6 +15,7 @@ const toastEl = document.getElementById("toast");
 const overlayEl = document.getElementById("overlay");
 const overlayResultEl = document.getElementById("overlay-result");
 const overlayScoreEl = document.getElementById("overlay-score");
+const toggleAiEl = document.getElementById("toggle-ai");
 
 const players = {
   [WHITE]: {
@@ -34,6 +35,11 @@ let lastMove = null; // индекс клетки последнего хода
 let busy = false; // запрос в полёте — клики игнорируем
 let gameOver = false;
 let toastTimer = null;
+
+// За какую сторону играет модель. null — партия человек-против-человека.
+// Модель берёт чёрных, потому что первыми в этой реализации ходят белые:
+// человек делает первый ход и сразу видит ответ.
+let aiSide = BLACK;
 
 // --------------------------------------------------------------- построение
 
@@ -218,20 +224,78 @@ async function newGame() {
   if (busy) return;
 
   busy = true;
+  boardEl.classList.add("is-busy");
   try {
     lastMove = null;
     overlayEl.hidden = true;
-    render(await api("/api/new", { method: "POST" }));
+
+    const state = await api("/api/new", { method: "POST" });
+    render(state);
     toast("Новая партия");
+
+    // если модель играет за того, кто ходит первым, — пусть начинает
+    await aiTurn(state);
   } catch (err) {
     fail(err);
   } finally {
     busy = false;
+    boardEl.classList.remove("is-busy");
   }
+}
+
+// Ходы модели, пока очередь её. Цикл, а не один запрос: если у человека
+// не окажется ходов, сервер вернёт очередь модели, и она ходит снова.
+// Возвращает последнее состояние — вызывающий продолжает работать с ним.
+async function aiTurn(state) {
+  while (aiSide !== null && !state.gameOver && state.current === aiSide) {
+    statusEl.textContent = `${players[aiSide].name} думает…`;
+
+    const before = state.board;
+
+    try {
+      state = await api("/api/ai-move", { method: "POST" });
+    } catch (err) {
+      // 503 — Python не запущен. Партия при этом валидна, поэтому просто
+      // выключаем модель и позволяем доиграть вдвоём, а не роняем всё.
+      if (err.status === 503) {
+        aiSide = null;
+        updateAiButton();
+        toast("Сервис модели не запущен — играйте вдвоём");
+        render(state);
+        return state;
+      }
+      throw err;
+    }
+
+    // Сервер не сообщает, куда сходила модель, — вычисляем сами:
+    // за ход ровно одна пустая клетка становится занятой.
+    lastMove = findPlaced(before, state.board);
+    render(state);
+  }
+
+  return state;
+}
+
+function findPlaced(before, after) {
+  for (let i = 0; i < 64; i++) {
+    const row = (i / 8) | 0;
+    const col = i % 8;
+    if (before[row][col] === 0 && after[row][col] !== 0) return i;
+  }
+  return null;
+}
+
+function updateAiButton() {
+  toggleAiEl.textContent =
+    aiSide === null ? "Соперник: человек" : "Соперник: модель";
 }
 
 async function makeMove(row, col) {
   if (busy || gameOver) return;
+
+  // сейчас очередь модели — за неё не ходим
+  const turn = boardEl.dataset.turn === "black" ? BLACK : WHITE;
+  if (aiSide !== null && turn === aiSide) return;
 
   const cell = cells[row * 8 + col];
 
@@ -263,6 +327,8 @@ async function makeMove(row, col) {
       const skipped = mover === WHITE ? BLACK : WHITE;
       toast(`У ${players[skipped].name} нет ходов — снова ходит ${players[mover].name}`);
     }
+
+    await aiTurn(state);
   } catch (err) {
     if (err.status === 400) {
       deny(cell, "Так ходить нельзя");
@@ -316,4 +382,27 @@ boardEl.addEventListener("click", (event) => {
 document.getElementById("new-game").addEventListener("click", newGame);
 document.getElementById("overlay-again").addEventListener("click", newGame);
 
+// Переключение соперника посреди партии допустимо: состояние живёт на
+// сервере и от того, кто выбирает ход, не зависит.
+toggleAiEl.addEventListener("click", async () => {
+  if (busy) return;
+
+  aiSide = aiSide === null ? BLACK : null;
+  updateAiButton();
+
+  if (aiSide === null) return;
+
+  busy = true;
+  boardEl.classList.add("is-busy");
+  try {
+    await aiTurn(await api("/api/state"));
+  } catch (err) {
+    fail(err);
+  } finally {
+    busy = false;
+    boardEl.classList.remove("is-busy");
+  }
+});
+
+updateAiButton();
 loadState();
