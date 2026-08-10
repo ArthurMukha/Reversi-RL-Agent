@@ -12,6 +12,19 @@ const (
 	Black
 )
 
+func (c Cell) String() string {
+	switch c {
+	case Empty:
+		return "Empty"
+	case White:
+		return "White"
+	case Black:
+		return "Black"
+	default:
+		return "Unknown"
+	}
+}
+
 type State struct {
 	Board   [8][8]Cell
 	Current Cell
