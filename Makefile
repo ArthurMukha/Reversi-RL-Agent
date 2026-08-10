@@ -1,4 +1,5 @@
-.PHONY: proto proto-go proto-py proto-clear
+.PHONY: proto proto-go proto-py proto-clear check up dev down
+.DEFAULT_GOAL := check
 
 proto: proto-clear proto-go proto-py
 
@@ -17,3 +18,19 @@ proto-py:
 
 proto-clear:
 	rm -rf game-service/internal/pb model_service/v1
+
+
+check:
+	go -C game-service build ./...
+	go -C game-service vet ./...
+	test -z "$$(gofmt -l game-service/)"
+	go -C game-service test -race ./...
+
+up:
+	docker compose up --build -d
+	@echo "открой http://$$(docker compose port game-service 8080)"
+
+dev: check up
+
+down:
+	docker compose down
