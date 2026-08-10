@@ -6,6 +6,12 @@ import torch.nn.functional as F
 class PolicyNetwork(nn.Module):
     def __init__(self, channels=64, n_res_blocks=2):
         super().__init__()
+
+        self.arch = {
+            "channels" : channels,
+            "n_res_blocks" : n_res_blocks,
+        }
+
         self.stem = nn.Sequential(
             nn.Conv2d(2, channels, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(channels),
