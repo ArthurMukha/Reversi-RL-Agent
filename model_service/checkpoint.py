@@ -29,14 +29,11 @@ class LoadedModel:
 
 
 def derive_arch(state_dict) -> dict:
-    """Выводит архитектуру из форм тензоров.
-    """
+    """Выводит архитектуру из форм тензоров."""
     channels = state_dict["stem.0.weight"].shape[0]
 
     blocks = {
-        int(key.split(".")[1])
-        for key in state_dict
-        if key.startswith("res_blocks.")
+        int(key.split(".")[1]) for key in state_dict if key.startswith("res_blocks.")
     }
 
     return {"channels": channels, "n_res_blocks": len(blocks)}
@@ -54,9 +51,7 @@ def load_checkpoint(path: Path) -> LoadedModel:
 
     derived = derive_arch(state_dict)
     if derived != arch:
-        raise ValueError(
-            f"{path.name}: в файле записано {arch}, а по весам {derived}"
-        )
+        raise ValueError(f"{path.name}: в файле записано {arch}, а по весам {derived}")
 
     model = PolicyNetwork(**arch)
     model.load_state_dict(state_dict, strict=True)
@@ -90,7 +85,9 @@ def _smoke_test(loaded: LoadedModel) -> None:
     assert -1.0 <= v <= 1.0, f"value вне [-1, 1]: {v}"
 
     print(f"  model_id  : {loaded.model_id}")
-    print(f"  arch      : {loaded.arch}, отпечаток весов {_signature(loaded.model):+.4f}")
+    print(
+        f"  arch      : {loaded.arch}, отпечаток весов {_signature(loaded.model):+.4f}"
+    )
     print(f"  forward   : policy {tuple(policy.shape)}, value {v:+.4f}")
     print(f"  meta      : {loaded.meta}")
 

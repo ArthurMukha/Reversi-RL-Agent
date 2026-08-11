@@ -1,5 +1,6 @@
 .PHONY: proto proto-go proto-py proto-clear check up dev down
 .DEFAULT_GOAL := check
+RUFF := model_service/.venv/bin/ruff
 
 proto: proto-clear proto-go proto-py
 
@@ -21,6 +22,9 @@ proto-clear:
 
 
 check:
+	@test -x $(RUFF) || { echo "нет $(RUFF) — поставь: model_service/.venv/bin/pip install -r model_service/requirements-dev.txt"; exit 1; }
+	$(RUFF) check .
+	$(RUFF) format --check .
 	go -C game-service build ./...
 	go -C game-service vet ./...
 	test -z "$$(gofmt -l game-service/)"

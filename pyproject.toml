@@ -1,0 +1,2 @@
+[tool.ruff]
+exclude = ["model_service/v1", "*.md"]

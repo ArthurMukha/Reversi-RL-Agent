@@ -1,6 +1,6 @@
 import torch
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 
 
 class PolicyNetwork(nn.Module):
@@ -8,8 +8,8 @@ class PolicyNetwork(nn.Module):
         super().__init__()
 
         self.arch = {
-            "channels" : channels,
-            "n_res_blocks" : n_res_blocks,
+            "channels": channels,
+            "n_res_blocks": n_res_blocks,
         }
 
         self.stem = nn.Sequential(
@@ -17,9 +17,9 @@ class PolicyNetwork(nn.Module):
             nn.BatchNorm2d(channels),
             nn.ReLU(),
         )
-        self.res_blocks = nn.ModuleList([
-            ResBlock(channels) for _ in range(n_res_blocks)
-        ])
+        self.res_blocks = nn.ModuleList(
+            [ResBlock(channels) for _ in range(n_res_blocks)]
+        )
 
         # policy head
         self.policy_conv = nn.Conv2d(channels, 2, kernel_size=1, bias=False)
@@ -29,7 +29,7 @@ class PolicyNetwork(nn.Module):
         # value head
         self.value_conv = nn.Conv2d(channels, 1, kernel_size=1, bias=False)
         self.value_bn = nn.BatchNorm2d(1)
-        self.value_fc1 = nn.Linear(8*8, 64)
+        self.value_fc1 = nn.Linear(8 * 8, 64)
         self.value_fc2 = nn.Linear(64, 1)
 
     def forward(self, x):
