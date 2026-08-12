@@ -22,7 +22,7 @@ proto-clear:
 
 
 check:
-	@test -x $(RUFF) || { echo "нет $(RUFF) — поставь: model_service/.venv/bin/pip install -r model_service/requirements-dev.txt"; exit 1; }
+	@command -v $(RUFF) >/dev/null || { echo "нет $(RUFF) — поставь: model_service/.venv/bin/pip install -r model_service/requirements-dev.txt"; exit 1; }
 	$(RUFF) check .
 	$(RUFF) format --check .
 	go -C game-service build ./...

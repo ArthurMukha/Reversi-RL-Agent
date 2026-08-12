@@ -16,8 +16,7 @@ DEFAULT_TEMPERATURE = 0.0
 
 
 class ModelServicer(pb_grpc.ModelServiceServicer):
-    def __init__(self, server_id: str, checkpoints_path: Path):
-        self.server_id = server_id
+    def __init__(self, checkpoints_path: Path):
         self.checkpoints_path = checkpoints_path
         self.load_models()
 
@@ -92,7 +91,7 @@ def serve(address: str) -> None:
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
     pb_grpc.add_ModelServiceServicer_to_server(
-        ModelServicer("iter13-wr72", CHECKPOINTS_DIR),
+        ModelServicer(CHECKPOINTS_DIR),
         server,
     )
     port = server.add_insecure_port(address)

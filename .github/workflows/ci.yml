@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: game-service/go.mod
+        
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+        
+      - name: Install ruff
+        run: pip install "$(grep '^ruff==' model_service/requirements-dev.txt)"
+      
+      - name: Run checks
+        run: make check RUFF=ruff
