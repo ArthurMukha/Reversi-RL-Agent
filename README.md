@@ -1,5 +1,7 @@
 # Reversi RL Agent
 
+[![CI](https://github.com/ArthurMukha/Reversi-RL-Agent/actions/workflows/ci.yml/badge.svg)](https://github.com/ArthurMukha/Reversi-RL-Agent/actions/workflows/ci.yml)
+
 Игра **Реверси (Отелло)** в браузере на Go + нейросетевой агент на PyTorch,
 обученный методами обучения с подкреплением.
 
@@ -51,9 +53,11 @@ reversi-rl-agent/
 │   ├── server.py              # gRPC-сервер
 │   ├── checkpoints/           # отобранные веса (едут в git)
 │   └── Dockerfile             # образ с CPU-сборкой torch
-├── training/training_1.ipynb  # обучение: self-play, MCTS, арена
+├── training/training.ipynb    # обучение: self-play, MCTS, арена
+├── .github/workflows/ci.yml   # проверки на каждый push и pull request
 ├── compose.yaml               # оба сервиса одной командой
-└── Makefile                   # генерация кода из .proto
+├── pyproject.toml             # настройки ruff
+└── Makefile                   # проверки, запуск, генерация кода из .proto
 ```
 
 ## Запуск
@@ -90,11 +94,16 @@ model_service/.venv/bin/python -m model_service.server
 ## Разработка
 
 ```bash
-make proto                              # перегенерировать код из .proto
-go -C game-service test -race ./...     # тесты движка
-go -C game-service vet ./...            # статические проверки
-gofmt -l game-service/                  # форматирование (пусто = ок)
+make check      # ruff + go build, vet, gofmt, test -race — всё, что гоняет CI
+make up         # оба сервиса в фоне, печатает адрес
+make dev        # check, и только если прошёл — up
+make down       # остановить
+make proto      # перегенерировать код из .proto
 ```
+
+`make check` — то же самое, что выполняет GitHub Actions на каждый push и
+pull request, поэтому красный CI после зелёного `check` означает разницу
+между машинами, а не между проверками.
 
 Python-окружение для локального запуска и генерации кода:
 
@@ -104,20 +113,32 @@ model_service/.venv/bin/pip install -r model_service/requirements-dev.txt
 ```
 
 `requirements.txt` — только то, что нужно в рантайме (оно и едет в образ);
-`requirements-dev.txt` добавляет к нему `grpcio-tools` для `make proto`.
-CPU-сборка torch подтягивается автоматически: индекс прописан в самом
-файле зависимостей.
+`requirements-dev.txt` добавляет к нему `grpcio-tools` для `make proto` и
+`ruff` для проверок. CPU-сборка torch подтягивается автоматически: индекс
+прописан в самом файле зависимостей.
+
+Линтер и форматтер — `ruff`, настройки в `pyproject.toml`. В CI ставится
+он один, без остальных зависимостей: `make check RUFF=ruff` берёт
+исполняемый файл из `PATH` вместо виртуального окружения, и раннеру не
+приходится качать torch ради проверки стиля.
 
 Сгенерированный из `.proto` код коммитится в репозиторий, чтобы проект
 собирался без `protoc` и плагинов.
 
 ## Как обучалась модель
 
-Ноутбук `training/training_1.ipynb` реализует цикл в духе AlphaZero: сеть играет
+Ноутбук `training/training.ipynb` реализует цикл в духе AlphaZero: сеть играет
 сама с собой, партии складываются в replay buffer, на них дообучается новая
 версия, после чего кандидат играет матч против текущей лучшей в «арене» и
 принимается только при уверенном перевесе. Отобранные веса лежат в
 `model_service/checkpoints/`.
+
+Поиск батчевый: деревья всех партий продвигаются синхронно, и листья
+оцениваются одним проходом сети вместо прохода на партию. Доска внутри —
+две 64-битные маски, ходы генерируются сдвигами без единого цикла по
+клеткам. Правила при этом не менялись, и это проверено: перед заменой
+реализации обе играли одни и те же случайные партии со сверкой позиции,
+очереди хода, легальных ходов обоих цветов и результата на каждом ходу.
 
 ## Roadmap
 
@@ -134,7 +155,10 @@ CPU-сборка torch подтягивается автоматически: и
 **Запуск и эксплуатация**
 - [x] 6. Docker Compose: оба сервиса одной командой, адреса и id модели — из
       переменных окружения.
-- [ ] 7. CI: `go vet`, `go test -race`, `gofmt`, `ruff`, сборка образов.
+- [x] 7. CI на GitHub Actions: `ruff`, `go build`, `go vet`, `gofmt`,
+      `go test -race` — одной целью `make check`. Сборка образов пока не в
+      CI: она дублирует то, что и так проверяется, а времени берёт больше
+      всего остального вместе.
 - [ ] 8. Тесты HTTP-слоя на `httptest` с заглушкой вместо клиента модели.
 - [ ] 9. Метрики Prometheus: время инференса, ходы в секунду, ошибки по кодам.
 - [ ] 10. gRPC health checking и server reflection.
