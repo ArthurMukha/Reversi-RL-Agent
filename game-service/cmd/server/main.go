@@ -19,6 +19,20 @@ type mover interface {
 	SelectMove(ctx context.Context, st *game.State, modelID string) (game.Move, error)
 }
 
+func (s *server) routes() http.Handler {
+	api := http.NewServeMux()
+
+	api.HandleFunc("GET /api/state", s.handleState)
+	api.HandleFunc("POST /api/new", s.handleNew)
+	api.HandleFunc("POST /api/move", s.handleMove)
+	api.HandleFunc("POST /api/ai-move", s.handleAIMove)
+
+	mux := http.NewServeMux()
+	mux.Handle("/api/", api)
+	mux.Handle("/", http.FileServer(http.FS(web.Files)))
+	return mux
+}
+
 type server struct {
 	game    *game.State
 	ai      mover
@@ -186,15 +200,7 @@ func run() error {
 		modelId: modelId,
 	}
 
-	mux := http.NewServeMux()
-	mux.Handle("/", http.FileServer(http.FS(web.Files)))
-
-	mux.HandleFunc("GET /api/state", srv.handleState)
-	mux.HandleFunc("POST /api/new", srv.handleNew)
-	mux.HandleFunc("POST /api/move", srv.handleMove)
-	mux.HandleFunc("POST /api/ai-move", srv.handleAIMove)
-
 	listenAddr := envOr("LISTEN_ADDR", "127.0.0.1:8080")
 	log.Printf("слушаю на http://%s\n", listenAddr)
-	return http.ListenAndServe(listenAddr, mux)
+	return http.ListenAndServe(listenAddr, srv.routes())
 }
